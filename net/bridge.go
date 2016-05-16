@@ -26,6 +26,23 @@ const (
 	Inconsistent
 )
 
+// Returns a string that is consistent with the weave script
+func (t BridgeType) String() string {
+	switch t {
+	case None:
+		return "none"
+	case Bridge:
+		return "bridge"
+	case Fastdp:
+		return "fastdp"
+	case BridgedFastdp:
+		return "bridged_fastdp"
+	case Inconsistent:
+		return "inconsistent"
+	}
+	return "unknown"
+}
+
 func DetectBridgeType(weaveBridgeName, datapathName string) BridgeType {
 	bridge, _ := netlink.LinkByName(weaveBridgeName)
 	datapath, _ := netlink.LinkByName(datapathName)
@@ -149,8 +166,6 @@ func FindBridgeIP(bridgeName string, subnet *net.IPNet) (net.IP, error) {
 }
 
 type BridgeConfig struct {
-	DBPrefix         string
-	HostRoot         string
 	DockerBridgeName string
 	WeaveBridgeName  string
 	DatapathName     string
@@ -158,6 +173,7 @@ type BridgeConfig struct {
 	NoBridgedFastdp  bool
 	MTU              int
 	Port             int
+	Mac              string
 }
 
 func CreateBridge(config *BridgeConfig) (BridgeType, error) {
@@ -218,11 +234,7 @@ func CreateBridge(config *BridgeConfig) (BridgeType, error) {
 }
 
 func initBridge(config *BridgeConfig) error {
-	peerName, err := GetSystemPeerName(config.DBPrefix, config.HostRoot)
-	if err != nil {
-		return err
-	}
-	mac, err := net.ParseMAC(peerName)
+	mac, err := net.ParseMAC(config.Mac)
 	if err != nil {
 		return err
 	}
