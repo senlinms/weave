@@ -264,12 +264,17 @@ func main() {
 	Log.Println("Our name is", router.Ourself)
 
 	if token != "" {
-		Log.Printf("Calling peer discovery endpoint %s", discoveryEndpoint)
 		var addresses []string
 		if advertiseAddress == "" {
+			localAddrs, err := weavenet.LocalAddresses()
+			checkFatal(err)
+			for _, addr := range localAddrs {
+				addresses = append(addresses, addr.IP.String())
+			}
 		} else {
 			addresses = strings.Split(advertiseAddress, ",")
 		}
+		Log.Printf("Calling peer discovery %s with my addresses %s", discoveryEndpoint, addresses)
 		discoveredPeers, err := peerDiscovery(discoveryEndpoint, token, name.String(), nickName, addresses)
 		checkFatal(err) // TODO: what if it is a transient error, and we are restarting?
 		Log.Printf("peer discovery result: %v", discoveredPeers)
