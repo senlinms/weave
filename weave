@@ -1533,6 +1533,7 @@ launch_router() {
         -e CHECKPOINT_DISABLE \
         $WEAVE_DOCKER_ARGS $IMAGE $COVERAGE_ARGS \
         --port $CONTAINER_PORT --nickname "$(hostname)" \
+        --host-root=$HOST_ROOT \
         $(router_bridge_opts) \
         --ipalloc-range "$IPRANGE" \
         --dns-effective-listen-address $DOCKER_BRIDGE_IP \
