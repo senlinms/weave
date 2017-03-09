@@ -5,11 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
+
 	"github.com/weaveworks/common/user"
+	"github.com/weaveworks/weave/ipam"
 )
 
 // TODO: move these definitions somewhere more shareable
@@ -58,4 +62,21 @@ func peerDiscovery(discoveryEndpoint, token, peername, nickname string, addresse
 	var updateResponse PeerUpdateResponse
 	err := do(discoveryEndpoint, token, request, &updateResponse)
 	return updateResponse.Addresses, err
+}
+
+func HandleHTTPPeer(router *mux.Router, alloc *ipam.Allocator) {
+	router.Methods("DELETE").Path("/peer").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if alloc != nil {
+			alloc.Shutdown()
+		}
+		w.WriteHeader(204)
+	})
+
+	router.Methods("DELETE").Path("/peer/{id}").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ident := mux.Vars(r)["id"]
+		if alloc != nil {
+			transferred := alloc.AdminTakeoverRanges(ident)
+			fmt.Fprintf(w, "%d IPs taken over from %s\n", transferred, ident)
+		}
+	})
 }
