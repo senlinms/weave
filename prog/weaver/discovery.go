@@ -1,23 +1,39 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strings"
 
 	"github.com/weaveworks/common/user"
 )
 
-func peerDiscovery(discoveryEndpoint, token, peername, nickname string, addresses []string) ([]string, error) {
-	values := url.Values{}
-	values.Add("peername", peername)
-	values.Add("nickname", nickname)
-	values.Add("addresses", strings.Join(addresses, ","))
+// TODO: move these definitions somewhere more shareable
+type PeerUpdateRequest struct {
+	Name      string   `json:"peername"`
+	Nickname  string   `json:"nickname"`  // optional
+	Addresses []string `json:"addresses"` // can be empty
+}
 
-	body := strings.NewReader(values.Encode())
+type PeerUpdateResponse struct {
+	Addresses []string `json:"addresses"`
+}
+
+func peerDiscovery(discoveryEndpoint, token, peername, nickname string, addresses []string) ([]string, error) {
+	request := PeerUpdateRequest{
+		Name:      peername,
+		Nickname:  nickname,
+		Addresses: addresses,
+	}
+
+	body := new(bytes.Buffer)
+	err := json.NewEncoder(body).Encode(request)
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest("POST", discoveryEndpoint+"/peer", body)
 	if err != nil {
 		return nil, err
@@ -29,16 +45,15 @@ func peerDiscovery(discoveryEndpoint, token, peername, nickname string, addresse
 		return nil, err
 	}
 	defer resp.Body.Close()
-	rbody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusOK {
+		rbody, _ := ioutil.ReadAll(resp.Body)
 		return nil, errors.New(resp.Status + ": " + string(rbody))
 	}
 
-	if len(rbody) == 0 {
-		return nil, nil
+	var updateResponse PeerUpdateResponse
+	err = json.NewDecoder(resp.Body).Decode(&updateResponse)
+	if err != nil {
+		return nil, err
 	}
-	return strings.Split(string(rbody), ","), nil
+	return updateResponse.Addresses, nil
 }
