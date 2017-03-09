@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/weaveworks/common/user"
 )
@@ -22,6 +23,8 @@ type PeerUpdateResponse struct {
 	Addresses []string `json:"addresses"`
 }
 
+var httpClient = &http.Client{Timeout: 30 * time.Second}
+
 func do(discoveryEndpoint, token string, request interface{}, response interface{}) error {
 	body := new(bytes.Buffer)
 	err := json.NewEncoder(body).Encode(request)
@@ -34,7 +37,7 @@ func do(discoveryEndpoint, token string, request interface{}, response interface
 	}
 	user.InjectIntoHTTPRequest(user.Inject(context.Background(), token), req)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
