@@ -29,13 +29,13 @@ type PeerUpdateResponse struct {
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
-func do(discoveryEndpoint, token string, request interface{}, response interface{}) error {
+func do(verb string, discoveryEndpoint, token string, request interface{}, response interface{}) error {
 	body := new(bytes.Buffer)
 	err := json.NewEncoder(body).Encode(request)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", discoveryEndpoint+"/peer", body)
+	req, err := http.NewRequest(verb, discoveryEndpoint+"/peer", body)
 	if err != nil {
 		return err
 	}
@@ -50,17 +50,20 @@ func do(discoveryEndpoint, token string, request interface{}, response interface
 		rbody, _ := ioutil.ReadAll(resp.Body)
 		return errors.New(resp.Status + ": " + string(rbody))
 	}
+	if response == nil {
+		return nil
+	}
 	return json.NewDecoder(resp.Body).Decode(response)
 }
 
-func peerDiscovery(discoveryEndpoint, token, peername, nickname string, addresses []string) ([]string, error) {
+func peerDiscoveryUpdate(discoveryEndpoint, token, peername, nickname string, addresses []string) ([]string, error) {
 	request := PeerUpdateRequest{
 		Name:      peername,
 		Nickname:  nickname,
 		Addresses: addresses,
 	}
 	var updateResponse PeerUpdateResponse
-	err := do(discoveryEndpoint, token, request, &updateResponse)
+	err := do("POST", discoveryEndpoint, token, request, &updateResponse)
 	return updateResponse.Addresses, err
 }
 

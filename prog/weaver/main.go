@@ -275,7 +275,7 @@ func main() {
 			addresses = strings.Split(advertiseAddress, ",")
 		}
 		Log.Printf("Calling peer discovery %s with my addresses %s", discoveryEndpoint, addresses)
-		discoveredPeers, err := peerDiscovery(discoveryEndpoint, token, name.String(), nickName, addresses)
+		discoveredPeers, err := peerDiscoveryUpdate(discoveryEndpoint, token, name.String(), nickName, addresses)
 		checkFatal(err) // TODO: what if it is a transient error, and we are restarting?
 		Log.Printf("peer discovery result: %v", discoveredPeers)
 		peers = append(peers, discoveredPeers...)
