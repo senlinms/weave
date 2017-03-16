@@ -43,6 +43,11 @@ EOF
 C1IP=$(container_ip $HOST1 c1)
 C2IP=$(container_ip $HOST1 c2)
 
+# Check the bridge IP is different from the container IPs
+BRIP=$(container_ip $HOST1 weave:expose)
+assert_raises "[ $BRIP != $C1IP ]"
+assert_raises "[ $BRIP != $C2IP ]"
+
 assert_raises "exec_on $HOST1 c1 $PING $C2IP"
 assert_raises "exec_on $HOST1 c2 $PING $C1IP"
 # Check if the route to the outside world works
@@ -63,6 +68,7 @@ C3IP=$(container_ip $HOST1 c3)
 
 # CNI shouldn't re-use the address until we call DEL
 assert_raises "[ $C2IP != $C3IP ]"
+assert_raises "[ $BRIP != $C3IP ]"
 assert_raises "exec_on $HOST1 c1 $PING $C3IP"
 
 
